@@ -21,7 +21,8 @@ class TicketResource extends JsonResource
             'id'=>$this->id,
             'hostname'=>$this->hostname,
             'username'=>$this->username,
-            'user'=>new UserResource(User::find($this->user_id))
+            'password'=>$this->password,
+            'user_id'=>$this->user_id
         ];
     }
 }

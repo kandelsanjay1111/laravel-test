@@ -66,7 +66,7 @@ class TicketController extends Controller
     public function update(Request $request,$id)
     {
         $validation=Validator::make($request->all(),[
-            'hostname'=>'required|url|max:255|unique:sources',
+            'hostname'=>'required|url|max:255|unique:sources,hostname,'.$id,
             'username'=>'required|string|max:255',
             'password'=>'required|string|max:255',
             'user_id'=>'required|numeric'
@@ -136,111 +136,110 @@ class TicketController extends Controller
         $user=User::with('sources')->find($id);
         if($user)
         {
-        $data=[];
-        foreach($user->sources as $key=>$source)
-        {
-            $hostname=$source->hostname;
-            // $token=isset($_COOKIE[$source->id.'login_token'])?$_COOKIE[$source->id.'login_token']:'';
-            $token='';
-             if($token==='')
-             {
-                //proceed to login 
-                $auth_response=$this->auth(['username'=>$source->username,'password'=>$source->password],$source->hostname.'/auth/login');
-                if(isset($auth_response['token']))
+            $data=array();
+
+            foreach($user->sources as $key=>$source)
+            {
+                $hostname=$source->hostname;
+                $token=isset($_COOKIE[$source->id.'login_token'])?$_COOKIE[$source->id.'login_token']:'';
+                if(empty($token))
                 {
-                    $token=$auth_response->json()['token'];
+                    //proceed to login 
+                    $auth_response=$this->auth(['username'=>$source->username,'password'=>$source->password],$source->hostname.'/auth/login');
+                    if(isset($auth_response['token']))
+                    {
+                        $token=$auth_response->json()['token'];
+                    }
+                    // else
+                    // {
+                    //     if($auth_response->status()==='401')
+                    //     {
+                    //         return $auth_response;
+                    //     }
+                    //     else
+                    //     {
+                    //         return response()->json(['message'=>'error in getting data'],$auth_response->status());
+                    //     }
+                    //     break;
+                    // }
+                    setcookie($source->id.'login_token',$token,time()+86400);
+                    $ticket=$this->getData($source->hostname.'/mms/ticket',$token)->json();
+                    $action=$this->getData($source->hostname.'/mms/ticket/action',$token)->json();
+                    $reason=$this->getData($source->hostname.'/mms/ticket/reason',$token)->json();
+                    $status=$this->getData($source->hostname.'/mms/ticket/status',$token)->json();
+                    foreach($ticket as $key=>$value)
+                    {
+                        foreach($action as $act)
+                        {
+                            if($value['action_id']===$act['id'])
+                            {
+                                 $ticket[$key]['action_id']=$act['caption'];
+                            }
+
+                        }
+                        foreach($reason as $reas)
+                        {
+                            if($value['reason_id']===$reas['id'])
+                            {
+                            $ticket[$key]['reason_id']=$reas['caption'];
+                            }
+                        }
+                        foreach($status as $sts)
+                        {
+                            if($value['status_id']==$sts['id'])
+                            {
+                                $ticket[$key]['status_id']=$sts['caption'];
+                            }
+                        }
+                    }
+                    // return $ticket;
                 }
-                // else
-                // {
-                //     if($auth_response->status()==='401')
-                //     {
-                //         return $auth_response;
-                //     }
-                //     else
-                //     {
-                //         return response()->json(['message'=>'error in getting data'],$auth_response->status());
-                //     }
-                //     break;
-                // }
-                setcookie($source->id.'login_token',$token,time()+86400);
-                $ticket=$this->getData($source->hostname.'/mms/ticket',$token)->json();
-                $action=$this->getData($source->hostname.'/mms/ticket/action',$token)->json();
-                $reason=$this->getData($source->hostname.'/mms/ticket/reason',$token)->json();
-                $status=$this->getData($source->hostname.'/mms/ticket/status',$token)->json();
-                foreach($ticket as $key=>$value)
+                 else
                 {
-                    foreach($action as $act)
+                    // return $token;
+                    $ticket=$this->getData($source->hostname.'/mms/ticket',$token)->json();
+                    // $ticket_array=json_decode($ticket);
+                    $action=$this->getData($source->hostname.'/mms/ticket/action',$token)->json();
+                    $reason=$this->getData($source->hostname.'/mms/ticket/reason',$token)->json();
+                    $status=$this->getData($source->hostname.'/mms/ticket/status',$token)->json();
+                    foreach($ticket as $key=>$value)
                     {
-                        if($value['action_id']===$act['id'])
+                        foreach($action as $act)
                         {
-                             $ticket[$key]['action_id']=$act['caption'];
-                        }
+                            if($value['action_id']===$act['id'])
+                            {
+                                 $ticket[$key]['action_id']=$act['caption'];
+                            }
 
-                    }
-                    foreach($reason as $reas)
-                    {
-                        if($value['reason_id']===$reas['id'])
-                        {
-                        $ticket[$key]['reason_id']=$reas['caption'];
                         }
-                    }
-                    foreach($status as $sts)
-                    {
-                        if($value['status_id']==$sts['id'])
+                        foreach($reason as $reas)
                         {
-                            $ticket[$key]['status_id']=$sts['caption'];
+                            if($value['reason_id']===$reas['id'])
+                            {
+                            $ticket[$key]['reason_id']=$reas['caption'];
+                            }
+                        }
+                        foreach($status as $sts)
+                        {
+                            if($value['status_id']==$sts['id'])
+                            {
+                                $ticket[$key]['status_id']=$sts['caption'];
+                            }
                         }
                     }
                 }
-             }
-             else
-             {
-                // $ticket=$this->getData($source->hostname.'/mms/ticket',$token)->json();
-                // // $ticket_array=json_decode($ticket);
-                // $action=$this->getData($source->hostname.'/mms/ticket/action',$token)->json();
-                // $reason=$this->getData($source->hostname.'/mms/ticket/reason',$token)->json();
-                // $status=$this->getData($source->hostname.'/mms/ticket/status',$token)->json();
-                // foreach($ticket as $key=>$value)
-                // {
-                //     foreach($action as $act)
-                //     {
-                //         if($value['action_id']===$act['id'])
-                //         {
-                //              $ticket[$key]['action_id']=$act['caption'];
-                //         }
-
-                //     }
-                //     foreach($reason as $reas)
-                //     {
-                //         if($value['reason_id']===$reas['id'])
-                //         {
-                //         $ticket[$key]['reason_id']=$reas['caption'];
-                //         }
-                //     }
-                //     foreach($status as $sts)
-                //     {
-                //         if($value['status_id']==$sts['id'])
-                //         {
-                //             $ticket[$key]['status_id']=$sts['caption'];
-                //         }
-                //     }
-                // }
-             }
-             $data[$source->id]=$ticket;
-        }
-        return $data;
-
-        // return $data[];   
-        // $data['token']=$_COOKIE;
-        // return response()->json(['data'=>$data]);
-        // return response()->json(['source_token'=>$_COOKIE]);
+                
+                $data[$source->id]=$ticket;
+            }
+            // return 'hello';
+            $data['token']=$_COOKIE;
+            return response()->json(['data'=>$data]);
         }   
 
         else
         {
             return response()->json(['message'=>'User is not found'],404);
-        }
-        
+        }        
     }
 
 

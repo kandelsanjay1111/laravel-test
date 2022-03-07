@@ -68,15 +68,18 @@ class UserController extends Controller
             $valid_data=$validation->valid();
 
             $user->username=$valid_data['username'];
+            if(isset($valid_data['password']))
+            {
             $user->password=bcrypt($valid_data['password']);
+            }
             $user->save();
             
             return response()->json(['message'=>'user is updated successfully']);
         }
-        else
-        {
-            return response()->json(['message'=>'the resource was not found'],404);
-        }
+        // else
+        // {
+        //     return response()->json(['message'=>'the resource was not found'],404);
+        // }
     }
 
     public function destroy($id)
