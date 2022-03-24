@@ -20,8 +20,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $fillable = [
         'username',
-        'password',
-        'user_id'
+        'email'
     ];
 
     /**
@@ -29,9 +28,9 @@ class User extends Authenticatable implements JWTSubject
      *
      * @var array<int, string>
      */
-    protected $hidden = [
-        'password',
-    ];
+    // protected $hidden = [
+    //     'password',
+    // ];
 
     /**
      * The attributes that should be cast.
@@ -42,9 +41,8 @@ class User extends Authenticatable implements JWTSubject
     //     'email_verified_at' => 'datetime',
     // ];
 
-    protected $table='user';
 
-    public $timestamps=false;
+    public $timestamps=true;
 
     public function sources()
     {
